@@ -2,6 +2,8 @@
 #This will function the same as TCP file transfer when using netcat with a few extra features
 import os,socket,ipaddress,argparse
 import getpass,shutil
+import datetime
+#TODO: try async I/O with trio
 def inp(prompt=">",password_protect=False):
     if password_protect:return getpass.getpass(prompt)
     else:
@@ -44,24 +46,37 @@ def send_file(file_path,recv_host,recv_port,local_host=None,local_port=None,retr
         shutil.copyfileobj(inp,conn)
         print("File sent")
 
+def get_time(format="%H:%M:%S"):return datetime.datetime.now().strftime(format)
+#literally just print but puts the time first
+def _logtext(logtype,msg,*args):return "%s%s: %s"%(get_time(),"" if logtype is None or len(logtype.strip())==0 else " %s"%logtype,msg.format(*args))
+def log(logtype,msg,*args):print(_logtext(logtype,msg,*args))
+def exit(msg,exit_code=0):
+    print(msg)
+    sys.exit(exit_code)
+
+LOG_INFO="INFO"
+LOG_ERROR="ERROR"
 def main():
     a=parse_args()
     port=a.port
     if not port is None:
         #0 only allowed on receiveing, on sending will also throw an error
         if port<0 or port > 65535:
-            raise ValueError("Invalid port supplied, must be 0-65535")
+            exit(_logtext(LOG_ERROR,"Invalid port supplied, must be 0-65535"),exit_code=1)
+    def _require_port(prompt="Endpoint port: "):
+        if port is None:
+            recv_port_raw=inp(prompt)
+            try:
+                recv_port=int(recv_port_raw)
+                if recv_port<=0 or port>65535:exit(_logtext(LOG_ERROR,"Port must be between 0-65536"),exit_code=1)
+                else:port=recv_port
+            except:
+                exit(_logtext(LOG_ERROR,"Failed to parse '%s' as integer"%recv_port_raw),exit_code=1)
     if a.generate:
         raise NotImplementedError()
     elif a.send:
         if port is None:
-            #raise ValueError("No receiving port specified, use -p")
-            recv_port_raw=inp("Receiving port: ")
-            try:
-                recv_port=int(recv_port_raw)
-                if recv_port<=0 or port>65535:print("Port must be between 0-65536")
-                else:port=recv_port
-            except:print("Failed to parse '%s' as integer"%recv_port_raw)
+            _require_port()
         #ayy we managed to get a successful port
         if port is not None:
             pass
