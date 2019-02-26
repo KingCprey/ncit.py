@@ -3,6 +3,8 @@
 import os,socket,ipaddress,argparse
 import getpass,shutil
 import datetime
+#5 second default timeout
+DEFAULT_TIMEOUT=5
 #TODO: try async I/O with trio
 def inp(prompt=">",password_protect=False):
     if password_protect:return getpass.getpass(prompt)
@@ -14,15 +16,21 @@ def parse_args(args=None,interactive=True):
     parser.add_argument("-g","--generate",action="store_true",help="Generate the command to send/recv with netcat")
     parser.add_argument("-s","--send",action="store_true",help="Send a file")
     parser.add_argument("-r","--recv",action="store_true",help="Receive a file")
+    #parser.add_argument("-R","--recv-text",action="store_true",help="Show the command needed to receive the file")
+    parser.add_argument("-t","--timeout",type=float,help="Specify the timeout (in seconds) when establishing TCP connection")
+    parser.add_argument("-R","--retries",type=int,help="Specify the amount of retries to attempt when establishing TCP connection")
     parser.add_argument("-l","--listen",action="store_true",help="Start up a file receiving server")
     parser.add_argument("-p","--port",type=int,help="The port to listen on or remote port (depending on action)",action="store")
     parser.add_argument("-P","--local-port",type=int,help="The local port to use (overrides -p on recv)",action="store")
     parser.add_argument("-v","--verbose",nargs="?",default=1,help="Set the verbosity level")
+    parser.add_argument("-c","--compress",action="store_true",help="Use with sending to send multiple files in single transmission (in an archive) (default: false)")
+    parser.add_argument("-A","--archive-type",action="store",help="Specify the type of archive to send the file as")
+    parser.add_argument("--list-archives",action="store_true",help="List the file types able to archive files into")
     if not interactive:parser.add_argument("-I","--interactive",action="store_true",help="Start the program in interactive mode")
     parser.add_argument("files",nargs="+",help="The list of files to send/location to store incoming file")
     return parser.parse_args(args)
 
-def send_file(file_path,recv_host,recv_port,local_host=None,local_port=None,retry=True,retry_count=5):
+def send_file(file_path,recv_host,recv_port,local_host=None,local_port=None,retry=True,retry_count=5,timeout=):
     if not os.path.exists(file_path):raise FileNotFoundError(file_path)
     if os.path.isdir(file_path):
         #compress dir into a single file to send over network.
@@ -56,6 +64,11 @@ def exit(msg,exit_code=0):
 
 LOG_INFO="INFO"
 LOG_ERROR="ERROR"
+def _prep_files(file_list):
+    if len(file_list)>0:
+        if len(file_list)>1:
+            pass
+    else:raise ValueError("No files supplied lmao")
 def main():
     a=parse_args()
     port=a.port
@@ -75,11 +88,17 @@ def main():
     if a.generate:
         raise NotImplementedError()
     elif a.send:
+        flen=len(a.files)
+        if flen>0:
+
+        else:
+            exit(_logtext(LOG_ERROR,"No files supplied"))
         if port is None:
             _require_port()
         #ayy we managed to get a successful port
         if port is not None:
-            pass
+
+
     elif a.listen:
         pass
     elif a.recv:
