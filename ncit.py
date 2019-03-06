@@ -3,14 +3,11 @@
 import os,socket,ipaddress,argparse
 import getpass,shutil
 import datetime
+import transport
+from utils import *
 #5 second default timeout
 DEFAULT_TIMEOUT=5
-#TODO: try async I/O with trio
-def inp(prompt=">",password_protect=False):
-    if password_protect:return getpass.getpass(prompt)
-    else:
-        try:return raw_input(prompt)
-        except:return input(prompt)
+
 def parse_args(args=None,interactive=True):
     parser=argparse.ArgumentParser()
     parser.add_argument("-g","--generate",action="store_true",help="Generate the command to send/recv with netcat")
@@ -30,40 +27,6 @@ def parse_args(args=None,interactive=True):
     parser.add_argument("files",nargs="+",help="The list of files to send/location to store incoming file")
     return parser.parse_args(args)
 
-def send_file(file_path,recv_host,recv_port,local_host=None,local_port=None,retry=True,retry_count=5,timeout=):
-    if not os.path.exists(file_path):raise FileNotFoundError(file_path)
-    if os.path.isdir(file_path):
-        #compress dir into a single file to send over network.
-        raise NotImplementedError("Directory archiving not implemented yet lmao")
-    elif not os.path.isfile(file_path):
-        raise FileNotFoundError("idk what to do with this lmao")
-    if local_host is None:local_host=""
-    if local_port is None:local_port=0
-    conn=None
-    retries=0
-    while retries<retry_count and retry:
-        try:
-            conn=socket.create_connection((recv_host,rect_port),source_address=(local_host,local_port))
-            break
-        except:
-            print("Failed to connect to %s:%s"%(recv_host,recv_port))
-            retries+=1
-    with open(file_path,'rb')as inp:
-        print("Starting file transfer")
-        #In future, implement own copying so can present transfer progress
-        shutil.copyfileobj(inp,conn)
-        print("File sent")
-
-def get_time(format="%H:%M:%S"):return datetime.datetime.now().strftime(format)
-#literally just print but puts the time first
-def _logtext(logtype,msg,*args):return "%s%s: %s"%(get_time(),"" if logtype is None or len(logtype.strip())==0 else " %s"%logtype,msg.format(*args))
-def log(logtype,msg,*args):print(_logtext(logtype,msg,*args))
-def exit(msg,exit_code=0):
-    print(msg)
-    sys.exit(exit_code)
-
-LOG_INFO="INFO"
-LOG_ERROR="ERROR"
 def _prep_files(file_list):
     if len(file_list)>0:
         if len(file_list)>1:
@@ -71,11 +34,14 @@ def _prep_files(file_list):
     else:raise ValueError("No files supplied lmao")
 def main():
     a=parse_args()
+    print(a)
+    if a.list_archives:
+        exit()
     port=a.port
     if not port is None:
         #0 only allowed on receiveing, on sending will also throw an error
         if port<0 or port > 65535:
-            exit(_logtext(LOG_ERROR,"Invalid port supplied, must be 0-65535"),exit_code=1)
+            exit(_logtext(Log.LOG_ERROR,"Invalid port supplied, must be 0-65535"),exit_code=1)
     def _require_port(prompt="Endpoint port: "):
         if port is None:
             recv_port_raw=inp(prompt)
@@ -84,26 +50,29 @@ def main():
                 if recv_port<=0 or port>65535:exit(_logtext(LOG_ERROR,"Port must be between 0-65536"),exit_code=1)
                 else:port=recv_port
             except:
-                exit(_logtext(LOG_ERROR,"Failed to parse '%s' as integer"%recv_port_raw),exit_code=1)
+                exit(_logtext(Log.LOG_ERROR,"Failed to parse '%s' as integer"%recv_port_raw),exit_code=1)
     if a.generate:
         raise NotImplementedError()
     elif a.send:
         flen=len(a.files)
         if flen>0:
-
+            if flen>1 or not os.path.isfile(a.files[0]):
+                raise NotImplementedError()
+                #log(Log.LOG_INFO,"Combining ")
+            elif os.path.isfile():
+                transport.send_file()
         else:
-            exit(_logtext(LOG_ERROR,"No files supplied"))
+            exit(_logtext(Log.LOG_ERROR,"No files supplied"))
         if port is None:
             _require_port()
         #ayy we managed to get a successful port
         if port is not None:
-
+            pass
 
     elif a.listen:
         pass
     elif a.recv:
         pass
-
 
 if __name__=="__main__":
     main()
