@@ -13,6 +13,7 @@ def inp(prompt=">",password_protect=False):
         try:return raw_input(prompt)
         except:return input(prompt)
 class Log:
+    LOG_CONNECTION="SOCKET"
     LOG_INFO="INFO"
     LOG_ERROR="ERROR"
 DEFALUT_COPY_BUFFER=64*1024 #64KB

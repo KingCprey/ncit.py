@@ -57,9 +57,9 @@ def main():
         flen=len(a.files)
         if flen>0:
             if flen>1 or not os.path.isfile(a.files[0]):
-                raise NotImplementedError()
+                pass
                 #log(Log.LOG_INFO,"Combining ")
-            elif os.path.isfile():
+            elif os.path.isfile(a.files[0]):
                 transport.send_file()
         else:
             exit(_logtext(Log.LOG_ERROR,"No files supplied"))

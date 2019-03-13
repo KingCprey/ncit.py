@@ -1,5 +1,19 @@
 import socket,os,tarfile
 from utils import *
+def establish_connection(recv_host,recv_port,local_host=None,local_port=0,retry=True,retry_count=3,timeout=5,silent=False):
+    retries=0
+    while True:
+        try:
+            if not silent:log(Log.LOG_CONNECTION,"Attempting TCP connection to {0}:{1}",recv_host,recv_port)
+            conn=socket.create_connection((recv_host,recv_port),timeout=timeout,source_address=(local_host,local_port))
+            if not silent:log(Log.LOG_CONNECTION,"Successfully connected to {0}:{1}",recv_host,recv_port)
+            return conn
+        except socket.timeout:
+            if not silent:log(Log.LOG_ERROR,"Connection timed out to {0}:{1}.{2}",)
+        except Exception as e:
+            if not silent:log(Log.LOG_ERROR,"Connection failed. Unknown error occured")
+            raise e
+        if retries>=retry_count or not retry:break
 
 def send_file(file_path,recv_host,recv_port,local_host=None,local_port=None,retry=True,retry_count=5,timeout=5):
     if not os.path.exists(file_path):raise FileNotFoundError(file_path)
