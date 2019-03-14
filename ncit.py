@@ -24,6 +24,7 @@ def parse_args(args=None,interactive=True):
     parser.add_argument("-A","--archive-type",action="store",help="Specify the type of archive to send the file as")
     parser.add_argument("--list-archives",action="store_true",help="List the file types able to archive files into")
     if not interactive:parser.add_argument("-I","--interactive",action="store_true",help="Start the program in interactive mode")
+    parser.add_argument("remote",nargs=1,help="The remote address to communicate with")
     parser.add_argument("files",nargs="+",help="The list of files to send/location to store incoming file")
     return parser.parse_args(args)
 
@@ -55,19 +56,35 @@ def main():
         raise NotImplementedError()
     elif a.send:
         flen=len(a.files)
+        single_file=None
         if flen>0:
             if flen>1 or not os.path.isfile(a.files[0]):
                 pass
                 #log(Log.LOG_INFO,"Combining ")
             elif os.path.isfile(a.files[0]):
-                transport.send_file()
+                single_file=open(a.files[0],'rb')
         else:
-            exit(_logtext(Log.LOG_ERROR,"No files supplied"))
+            exit(_logtext(Log.LOG_ERROR,"No files supplied"),exit_code=1)
+        #port might be supplied with the remote address
+        #if not a valid ip could be hostname, will try lookup of hostname
+        remote_address=None
+        if not validate_ip(a.remote):
+            #ipaddress might be encapsulated within brackets []
+            if "[" or "]" in a.remote:
+                no_brackets=a.remote.replace("[","").replace("]","")
+                if validate_ip(no_brackets):
+                    remote_address=no_brackets
+            #port might be supplied with remote address
+            if validate_hostname(a.remote):remote_address=a.remote
+        if not remote_address:
+            exit(_logtext(Log.LOG_ERROR,"Remote address '%s' is not a valid IP or Hostname"%a.remote),exit_code=1)
         if port is None:
             _require_port()
         #ayy we managed to get a successful port
         if port is not None:
-            pass
+        else:
+            exit(_logtext(Log.LOG_ERROR,"Invalid port supplied: '%s'"%port)
+
 
     elif a.listen:
         pass

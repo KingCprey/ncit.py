@@ -1,4 +1,4 @@
-import tarfile,zipfile
+import tarfile,zipfile,ipaddress
 try:
     import bz2
     BZIP2_SUPPORTED=True
@@ -38,6 +38,23 @@ def exit(msg=None,exit_code=0):
     if msg:print(msg)
     elif type(msg)==int:exit_code=msg
     sys.exit(exit_code)
-
+def exiterr(exit_code,logtype,msg,*args):exit(_logtext(logtype,msg,*args),exit_code)
 def _bzip2_supported():return BZIP2_SUPPORTED
 def _lzma_supported():return LZMA_SUPPORTED
+def validate_ip(addr):
+    try:
+        ipaddress.ip_address(addr)
+        return True
+    except ValueError:return False
+def _get_addresses(hostname):
+    addrinfo=socket.getaddrinfo(hostname,None):
+    addresses=[]
+    for tup in addrinfo:
+        ad=tup[5][0]
+        if not ad in addresses:addresses.append(ad)
+    return addresses
+def validate_hostname(hostname,return_addr=False):
+    try:
+        addr=_get_addresses(hostname)
+        return True,addr if return_addr else True
+    except:return False,None if return_addr else False
