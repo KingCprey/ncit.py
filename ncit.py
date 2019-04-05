@@ -44,14 +44,13 @@ def main():
         if port<0 or port > 65535:
             exit(_logtext(Log.LOG_ERROR,"Invalid port supplied, must be 0-65535"),exit_code=1)
     def _require_port(prompt="Endpoint port: "):
-        if port is None:
-            recv_port_raw=inp(prompt)
-            try:
-                recv_port=int(recv_port_raw)
-                if recv_port<=0 or port>65535:exit(_logtext(LOG_ERROR,"Port must be between 0-65536"),exit_code=1)
-                else:port=recv_port
-            except:
-                exit(_logtext(Log.LOG_ERROR,"Failed to parse '%s' as integer"%recv_port_raw),exit_code=1)
+        recv_port_raw=inp(prompt)
+        try:
+            recv_port=int(recv_port_raw)
+            if recv_port<=0 or port>65535:exit(_logtext(LOG_ERROR,"Port must be between 0-65536"),exit_code=1)
+            else:return recv_port
+        except:
+            exit(_logtext(Log.LOG_ERROR,"Failed to parse '%s' as integer"%recv_port_raw),exit_code=1)
     if a.generate:
         raise NotImplementedError()
     elif a.send:
@@ -68,23 +67,38 @@ def main():
         #port might be supplied with the remote address
         #if not a valid ip could be hostname, will try lookup of hostname
         remote_address=None
-        if not validate_ip(a.remote):
+        remote_str=a.remote[0]
+        if not validate_ip(remote_str):
             #ipaddress might be encapsulated within brackets []
-            if "[" or "]" in a.remote:
-                no_brackets=a.remote.replace("[","").replace("]","")
+            if "[" or "]" in remote_str:
+                #check if any text after last bracket
+                last_bracket=remote_str.rfind("]")
+                #lil bich boi missed the last bracket.
+                if not "]" in remote_str:
+                    raise NotImplementedError("lmao git gud")
+                if last_bracket>=0 and last_bracket<len(remote_str)-1:
+                    ending_data=remote_str[last_bracket+1:]
+                    #strip the ending data from the remote string
+                    remote_str=remote_str[:last_bracket+1]
+                    if len(ending_data)>0:
+                        ending_data=ending_data.replace(":","")
+                        if validate_port(ending_data):port=int(ending_data)
+                no_brackets=remote_str.replace("[","").replace("]","")
                 if validate_ip(no_brackets):
                     remote_address=no_brackets
-            #port might be supplied with remote address
-            if validate_hostname(a.remote):remote_address=a.remote
+            if not remote_address:
+                no_brackets=remote_str.replace("[","").replace("]","")
+                #domain name could've been passed
+                if validate_hostname(no_brackets):remote_address=no_brackets
         if not remote_address:
             exit(_logtext(Log.LOG_ERROR,"Remote address '%s' is not a valid IP or Hostname"%a.remote),exit_code=1)
-        if port is None:
-            _require_port()
+        if port is None:port=_require_port()
         #ayy we managed to get a successful port
         if port is not None:
+            print("REMOTE ADDRESS IS %s"%remote_address)
+            print("REMOTE PORT IS %s"%port)
         else:
-            exit(_logtext(Log.LOG_ERROR,"Invalid port supplied: '%s'"%port)
-
+            exit(_logtext(Log.LOG_ERROR,"Invalid port supplied: '%s'"%port))
 
     elif a.listen:
         pass

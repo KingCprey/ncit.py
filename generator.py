@@ -21,4 +21,4 @@ def _mkdir_output_location(location=DEFAULT_OUTPUT_LOCATION):
 def _nc_receive_tcp(nc_exec=DEFAULT_NC_EXEC,port=DEFAULT_PORT,output_location=None):
     if output_location is None:
         pass
-    return "%s -l -p %s > %s" %
+    return "%s -l -p %s > %s" % (nc_exec,port,output_location)
